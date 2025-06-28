@@ -41,7 +41,7 @@ jobs:
           pip install safety
           safety scan --no-link -r requirements.txt || true
           safety scan --no-link -r requirements.txt --json > safety-report.json || true
-          
+
       - name: Upload safety report
         uses: actions/upload-artifact@v4
         with:
@@ -52,11 +52,10 @@ jobs:
         id: trivy-fs
         uses: aquasecurity/trivy-action@master
         with:
-         scan-type: fs
-         scan-ref: .
-         format: table
-         output: trivy-fs-report.txt
-
+          scan-type: fs
+          scan-ref: .
+          format: table
+          output: trivy-fs-report.txt
 
       - name: Upload Trivy FS report
         uses: actions/upload-artifact@v4
@@ -84,10 +83,8 @@ jobs:
       - name: Docker login
         uses: docker/login-action@v3
         with:
-         username: ${{ secrets.DOCKERHUB_USERNAME }}
-         password: ${{ secrets.DOCKERHUB_PASSWORD }}
-
-
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Build Docker Image
         run: |
@@ -113,16 +110,43 @@ jobs:
       - name: Push Docker Image
         run: |
           docker push $IMAGE_NAME:${IMAGE_TAG}
-      - name: Send email with artifacts
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          username: ${{ secrets.SMTP_USERNAME }}
-          password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "DevSecOps Pipeline Reports"
-          to: "abdowagieh@gmail.com"
-          from: "abdeltawabwagieh90@gmail.com"
-          attachments: safety-report.json,trivy-fs-report.txt,trivy-image-report.txt,snyk-report.json
-          body: "Please find the attached security scan reports."
 
+      - name: Upload Safety report to Slack
+        run: |
+          curl -F channels="#all-graduation" \
+               -F file=@safety-report.json \
+               -F initial_comment="🛡️ Safety Scan Report" \
+               -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+               https://slack.com/api/files.upload
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      - name: Upload Trivy FS report to Slack
+        run: |
+          curl -F channels="#all-graduation" \
+               -F file=@trivy-fs-report.txt \
+               -F initial_comment="🔍 Trivy FS Scan Report" \
+               -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+               https://slack.com/api/files.upload
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      - name: Upload Trivy Image report to Slack
+        run: |
+          curl -F channels="#all-graduation" \
+               -F file=@trivy-image-report.txt \
+               -F initial_comment="🐳 Trivy Image Scan Report" \
+               -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+               https://slack.com/api/files.upload
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      - name: Upload Snyk report to Slack
+        run: |
+          curl -F channels="#all-graduation" \
+               -F file=@snyk-report.json \
+               -F initial_comment="🔎 Snyk Scan Report" \
+               -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+               https://slack.com/api/files.upload
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
