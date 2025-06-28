@@ -1,0 +1,10 @@
+[
+  {
+    "text": "Run Trivy scan",
+    "done": false
+  },
+  {
+    "text": "review trivy report",
+    "done": false
+  }
+]

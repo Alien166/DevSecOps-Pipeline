@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DevSecOps Daily Tasks</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    .container {
+      max-width: 700px;
+      margin-top: 60px;
+    }
+    .task-box {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .done {
+      text-decoration: line-through;
+      color: gray;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="task-box">
+      <div class="text-center mb-4">
+        <h2 class="fw-bold text-primary"> DevSecOps Daily Tasks</h2>
+        <p class="text-muted">Organize your day like a pro 💻🔐</p>
+      </div>
+
+      <!-- ✅ Navigation Buttons -->
+      <div class="d-flex justify-content-between mb-4">
+        <a href="/scan-logs" class="btn btn-outline-primary">🔍 View Scan Logs</a>
+        <a href="/summary" class="btn btn-outline-secondary">📋 Daily Summary</a>
+      </div>
+
+      <!-- ✅ Add Task Form -->
+      <form action="/tasks" method="POST" class="d-flex gap-2 mb-4">
+        <input type="text" name="task" class="form-control" placeholder="Enter new task..." required>
+        <button type="submit" class="btn btn-success">Add</button>
+      </form>
+
+      <!-- ✅ Task List -->
+      <ul class="list-group">
+        {% for task in tasks %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" onchange="location.href='/tasks/toggle/{{ loop.index0 }}'" {% if task.done %}checked{% endif %}>
+              <label class="form-check-label {% if task.done %}done{% endif %}">
+                {{ task.text }}
+              </label>
+            </div>
+            <a href="/tasks/delete/{{ loop.index0 }}" class="btn btn-sm btn-outline-danger">🗑️</a>
+          </li>
+        {% else %}
+          <li class="list-group-item text-muted text-center">No tasks yet</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</body>
+</html>
