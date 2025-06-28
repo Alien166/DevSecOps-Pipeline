@@ -48,16 +48,15 @@ jobs:
           name: safety-report
           path: safety-report.json
 
-      - name: Install Trivy
-        run: |
-           sudo apt-get update
-           sudo apt-get install -y trivy
-
-
       - name: Trivy FS Scan
-        run: |
-          trivy fs --scanners vuln --no-progress --severity HIGH,CRITICAL --format table --output trivy-fs-report.txt .
-          cat trivy-fs-report.txt
+        id: trivy-fs
+        uses: aquasecurity/trivy-action@master
+        with:
+         scan-type: fs
+         scan-ref: .
+         format: table
+         output: trivy-fs-report.txt
+
 
       - name: Upload Trivy FS report
         uses: actions/upload-artifact@v4
