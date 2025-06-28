@@ -111,42 +111,8 @@ jobs:
         run: |
           docker push $IMAGE_NAME:${IMAGE_TAG}
 
-      - name: Upload Safety report to Slack
+      - name: Send Slack notification
         run: |
-          curl -F channels="#all-graduation" \
-               -F file=@safety-report.json \
-               -F initial_comment="🛡️ Safety Scan Report" \
-               -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
-               https://slack.com/api/files.upload
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-
-      - name: Upload Trivy FS report to Slack
-        run: |
-          curl -F channels="#all-graduation" \
-               -F file=@trivy-fs-report.txt \
-               -F initial_comment="🔍 Trivy FS Scan Report" \
-               -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
-               https://slack.com/api/files.upload
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-
-      - name: Upload Trivy Image report to Slack
-        run: |
-          curl -F channels="#all-graduation" \
-               -F file=@trivy-image-report.txt \
-               -F initial_comment="🐳 Trivy Image Scan Report" \
-               -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
-               https://slack.com/api/files.upload
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-
-      - name: Upload Snyk report to Slack
-        run: |
-          curl -F channels="#all-graduation" \
-               -F file=@snyk-report.json \
-               -F initial_comment="🔎 Snyk Scan Report" \
-               -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
-               https://slack.com/api/files.upload
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          curl -X POST -H 'Content-type: application/json' \
+          --data "{\"text\":\"✅ DevSecOps pipeline finished! View reports here:\nhttps://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+          ${{ secrets.SLACK_WEBHOOK_URL }}
