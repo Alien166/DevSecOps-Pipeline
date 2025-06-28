@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: toba44/DevSecOps-app
+  IMAGE_NAME: toba44/devsecops-app
   REGISTRY: docker.io
   GITOPS_REPO: git@github.com:RihabHaddad/GitOps.git
 
