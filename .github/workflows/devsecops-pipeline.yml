@@ -113,3 +113,16 @@ jobs:
       - name: Push Docker Image
         run: |
           docker push $IMAGE_NAME:${IMAGE_TAG}
+      - name: Send email with artifacts
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "DevSecOps Pipeline Reports"
+          to: "abdowagieh@gmail.com"
+          from: "abdeltawabwagieh90@gmail.com"
+          attachments: safety-report.json,trivy-fs-report.txt,trivy-image-report.txt,snyk-report.json
+          body: "Please find the attached security scan reports."
+
