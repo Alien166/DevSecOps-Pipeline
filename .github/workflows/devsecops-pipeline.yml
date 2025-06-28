@@ -1,0 +1,117 @@
+name: DevSecOps Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: toba44/DevSecOps-app
+  REGISTRY: docker.io
+  GITOPS_REPO: git@github.com:RihabHaddad/GitOps.git
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Get Git short SHA
+        id: vars
+        run: echo "IMAGE_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Dependency Check
+        env:
+          SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
+        run: |
+          pip install safety
+          safety scan -r requirements.txt || true
+          safety scan -r requirements.txt --json > safety-report.json
+          
+      - name: Upload safety report
+        uses: actions/upload-artifact@v4
+        with:
+          name: safety-report
+          path: safety-report.json
+
+      - name: Install Trivy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
+          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_Linux-64bit.tar.gz
+          tar zxvf trivy_Linux-64bit.tar.gz
+          sudo mv trivy /usr/local/bin/
+
+      - name: Trivy FS Scan
+        run: |
+          trivy fs --scanners vuln --no-progress --severity HIGH,CRITICAL --format table --output trivy-fs-report.txt .
+          cat trivy-fs-report.txt
+
+      - name: Upload Trivy FS report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-fs-report
+          path: trivy-fs-report.txt
+
+      - name: Install Snyk
+        run: npm install -g snyk
+
+      - name: Snyk Scan
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          snyk auth $SNYK_TOKEN
+          snyk test --file=requirements.txt --package-manager=pip || true
+          snyk test --file=requirements.txt --package-manager=pip --json > snyk-report.json
+
+      - name: Upload Snyk report
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-report
+          path: snyk-report.json
+
+      - name: Docker login
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+        run: |
+          echo $DOCKERHUB_PASSWORD | docker login -u $DOCKERHUB_USERNAME --password-stdin
+
+      - name: Build Docker Image
+        run: |
+          docker build -t $IMAGE_NAME:${IMAGE_TAG} .
+
+      - name: Trivy Image Scan
+        run: |
+          trivy image --timeout 10m \
+            --scanners vuln \
+            --no-progress \
+            --severity HIGH,CRITICAL \
+            --format table \
+            --output trivy-image-report.txt \
+            $IMAGE_NAME:${IMAGE_TAG} || true
+          cat trivy-image-report.txt
+
+      - name: Upload Trivy image report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-image-report
+          path: trivy-image-report.txt
+
+      - name: Push Docker Image
+        run: |
+          docker push $IMAGE_NAME:${IMAGE_TAG}
