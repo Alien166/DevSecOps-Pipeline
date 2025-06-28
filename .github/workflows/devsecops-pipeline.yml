@@ -34,7 +34,9 @@ jobs:
         id: vars
         run: echo "IMAGE_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-      - name: Dependency Check 
+      - name: Dependency Check
+        env:
+          SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
         run: |
           pip install safety
           safety scan -r requirements.txt || true
